@@ -1,5 +1,5 @@
 
-# obfuscation-maven-plugin
+# obfuscation-gradle-plugin
 A gradle plugin used to obfuscate a compiled file with qProtect and qProtect Lite
 
 ## Instructions
