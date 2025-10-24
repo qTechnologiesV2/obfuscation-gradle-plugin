@@ -61,13 +61,13 @@ Configure the obfuscation task in your build file:
 ```kotlin
 qprotect {
     // Required: Path to the JAR file to obfuscate
-    jarPath.set(file("build/libs/myapp.jar"))
+    jarPath.set("build/libs/myapp.jar")
 
     // Required: Path for the obfuscated output JAR
-    outputJarPath.set(file("build/libs/myapp-obfuscated.jar"))
+    outputJarPath.set("build/libs/myapp-obfuscated.jar")
 
     // Required: Path to the qProtect JAR file
-    qprotectJarPath.set(file("tools/qprotect.jar"))
+    qprotectJarPath.set("tools/qprotect.jar")
 
     // Required: Path to the qProtect configuration file
     configPath.set("${project.rootDir}/obf-settings.toml")
@@ -83,9 +83,9 @@ qprotect {
 **Groovy DSL:**
 ```groovy
 qprotect {
-    jarPath = file('build/libs/myapp.jar')
-    outputJarPath = file('build/libs/myapp-obfuscated.jar')
-    qprotectJarPath = file('tools/qprotect.jar')
+    jarPath = 'build/libs/myapp.jar'
+    outputJarPath = 'build/libs/myapp-obfuscated.jar'
+    qprotectJarPath = 'tools/qprotect.jar'
     configPath = "${project.rootDir}/obf-settings.toml"
 
     relocations = [
