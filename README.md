@@ -124,9 +124,9 @@ tasks.named("build") { // or shadowJar, etc.
 
 | Property          | Type                  | Required | Description                                      |
 |-------------------|-----------------------|----------|--------------------------------------------------|
-| `jarPath`         | `File`                | Yes      | Path to the input JAR file to obfuscate          |
-| `outputJarPath`   | `File`                | Yes      | Path where the obfuscated JAR will be saved      |
-| `qprotectJarPath` | `File`                | Yes      | Path to the qProtect executable JAR              |
+| `jarPath`         | `String`                | Yes      | Path to the input JAR file to obfuscate          |
+| `outputJarPath`   | `String`                | Yes      | Path where the obfuscated JAR will be saved      |
+| `qprotectJarPath` | `String`                | Yes      | Path to the qProtect executable JAR              |
 | `configPath`      | `String`              | Yes      | Path to the qProtect TOML configuration file     |
 | `relocations`     | `Map<String, String>` | No       | Package relocation mappings to resolve conflicts |
 
