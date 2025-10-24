@@ -1,48 +1,133 @@
+# qProtect Gradle Plugin
 
-# obfuscation-gradle-plugin
-A gradle plugin used to obfuscate a compiled file with qProtect and qProtect Lite
+A Gradle plugin for obfuscating compiled JAR files using qProtect and qProtect Lite.
 
-## Instructions
-- add our repository as pluginRepository to your settings.gradle
+## Prerequisites
 
+- Java 8 or higher
+- qProtect JAR file
+
+## Installation
+
+### 1. Configure Plugin Repository
+
+Add the plugin repository to your `settings.gradle` (Groovy) or `settings.gradle.kts` (Kotlin):
+
+**Kotlin DSL:**
 ```kotlin
 pluginManagement {
     repositories {
+        gradlePluginPortal()
         maven("https://nexus.mdma.dev/repository/maven-releases")
-    }
-
-    resolutionStrategy {
-        eachPlugin {
-            if (requested.id.id == "dev.mdma.qprotect.obfuscation") {
-                useModule("dev.mdma.qprotect:obfuscation:1.0")
-            }
-        }
     }
 }
 ```
 
- - add our plugin into your build.gradle
+**Groovy DSL:**
+```groovy
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        maven { url 'https://nexus.mdma.dev/repository/maven-releases' }
+    }
+}
+```
 
+### 2. Apply the Plugin
+
+Add the plugin to your `build.gradle` or `build.gradle.kts`:
+
+**Kotlin DSL:**
 ```kotlin
 plugins {
     id("java")
-    id("dev.mdma.qprotect.obfuscation") version "1.0"
+    id("dev.mdma.qprotect.obfuscation") version "2.0"
 }
 ```
- - add the task to your build.gradle and set the paths
+
+**Groovy DSL:**
+```groovy
+plugins {
+    id 'java'
+    id 'dev.mdma.qprotect.obfuscation' version '2.0'
+}
+```
+
+## Configuration
+
+Configure the obfuscation task in your build file:
+
+**Kotlin DSL:**
 ```kotlin
-tasks {
-    obfuscate {
-        obfuscatorPath = File("qprotect-core-1.11.0-release.jar")
-        configPath = File("config.yml")
-        //inputFile and outputFile is optional it can be set here or in the config
-        inputFile = File("input.jar")
-        outputFile = File("output.jar")
-        //javaPath is only required if your project or gradle doesn't use java 8
-        javaPath = File("C:/Program Files/Amazon Corretto/jdk1.8.0_392/jre")
-    }
+qprotect {
+    // Required: Path to the JAR file to obfuscate
+    jarPath.set(file("build/libs/myapp.jar"))
+
+    // Required: Path for the obfuscated output JAR
+    outputJarPath.set(file("build/libs/myapp-obfuscated.jar"))
+
+    // Required: Path to the qProtect JAR file
+    qprotectJarPath.set(file("tools/qprotect.jar"))
+
+    // Required: Path to the qProtect configuration file
+    configPath.set("${project.rootDir}/obf-settings.toml")
+
+    // Optional: Package relocations (useful for resolving conflicts)
+    relocations.set(mapOf(
+        "org.bson" to "com.myapp.shaded.bson",
+        "com.google.common" to "com.myapp.shaded.guava"
+    ))
 }
 ```
-- then run the task obfuscate
 
+**Groovy DSL:**
+```groovy
+qprotect {
+    jarPath = file('build/libs/myapp.jar')
+    outputJarPath = file('build/libs/myapp-obfuscated.jar')
+    qprotectJarPath = file('tools/qprotect.jar')
+    configPath = "${project.rootDir}/obf-settings.toml"
 
+    relocations = [
+            'org.bson': 'com.myapp.shaded.bson',
+            'com.google.common': 'com.myapp.shaded.guava'
+    ]
+}
+```
+
+## Configuration File
+
+```toml
+# Important: Set the libraries path for dependency resolution
+libraries = [
+    "${dependenciesPath}"
+]
+```
+
+## Usage
+
+Run the obfuscation task:
+
+```bash
+./gradlew obfuscate
+```
+
+Or make it run automatically after building:
+
+```kotlin
+tasks.named("build") { // or shadowJar, etc.
+    finalizedBy("obfuscate")
+}
+```
+
+## Configuration Options
+
+| Property          | Type                  | Required | Description                                      |
+|-------------------|-----------------------|----------|--------------------------------------------------|
+| `jarPath`         | `File`                | Yes      | Path to the input JAR file to obfuscate          |
+| `outputJarPath`   | `File`                | Yes      | Path where the obfuscated JAR will be saved      |
+| `qprotectJarPath` | `File`                | Yes      | Path to the qProtect executable JAR              |
+| `configPath`      | `String`              | Yes      | Path to the qProtect TOML configuration file     |
+| `relocations`     | `Map<String, String>` | No       | Package relocation mappings to resolve conflicts |
+
+**Note:** The `${dependenciesPath}` variable is automatically provided by the plugin and points to your project's dependencies.

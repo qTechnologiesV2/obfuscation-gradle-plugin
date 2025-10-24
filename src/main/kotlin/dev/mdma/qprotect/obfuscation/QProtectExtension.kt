@@ -1,0 +1,23 @@
+package dev.mdma.qprotect.obfuscation
+
+import org.gradle.api.model.ObjectFactory
+import org.gradle.api.provider.MapProperty
+import org.gradle.api.provider.Property
+import javax.inject.Inject
+
+abstract class QProtectExtension @Inject constructor(objects: ObjectFactory) {
+
+    val jarPath: Property<String> = objects.property(String::class.java)
+
+    val outputJarPath: Property<String> = objects.property(String::class.java)
+
+    val configPath: Property<String> = objects.property(String::class.java)
+
+    val qprotectJarPath: Property<String> = objects.property(String::class.java)
+        .convention(System.getProperty("user.home") + "/qprotect.jar")
+
+    val relocations: MapProperty<String, String> =
+        objects.mapProperty(String::class.java, String::class.java)
+            .convention(emptyMap())
+
+}

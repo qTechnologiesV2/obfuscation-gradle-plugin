@@ -1,29 +1,46 @@
 plugins {
-    id("java")
-    id("java-gradle-plugin")
-    id("maven-publish")
+    `kotlin-dsl`
+    `java-gradle-plugin`
+    `maven-publish`
+    kotlin("jvm") version "2.2.20"
 }
 
-group = "dev.mdma.qprotect"
-version = "1.0"
+group = "dev.mdma.qprotect.obfuscation"
+version = "2.0"
 
 repositories {
     mavenCentral()
 }
 
+dependencies {
+    implementation("me.lucko:jar-relocator:1.7")
+}
+
+kotlin {
+    jvmToolchain(8)
+}
+
 gradlePlugin {
     plugins {
-        create("qProtectObfuscation") {
+        create("obfuscation-gradle-plugin") {
             id = "dev.mdma.qprotect.obfuscation"
-            implementationClass = "dev.mdma.qprotect.obfuscation.ObfuscationPlugin"
+            displayName = "qProtect Plugin"
+            implementationClass = "dev.mdma.qprotect.obfuscation.QProtect"
+            description = "A Gradle plugin for qProtect 2.0 obfuscation."
+            tags.set(listOf())
         }
     }
 }
 
-tasks.register("publishAll") {
-    dependsOn("assemble")
-    dependsOn("publish")
-    dependsOn("publishPluginMavenPublicationToMavenLocal")
-    dependsOn("publishQProtectObfuscationPluginMarkerMavenPublicationToMavenLocal")
-    dependsOn("publishToMavenLocal")
+publishing {
+    repositories {
+        maven {
+            name = "qTechnologiesRepo"
+            url = uri("https://nexus.mdma.dev/repository/maven-releases")
+            credentials {
+                username = findProperty("repo.user") as String? ?: System.getenv("REPO_USER")
+                password = findProperty("repo.password") as String? ?: System.getenv("REPO_PASSWORD")
+            }
+        }
+    }
 }
