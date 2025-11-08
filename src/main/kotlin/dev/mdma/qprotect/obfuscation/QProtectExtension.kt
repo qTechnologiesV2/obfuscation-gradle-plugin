@@ -18,6 +18,9 @@ abstract class QProtectExtension @Inject constructor(objects: ObjectFactory) {
     val qprotectJarPath: Property<String> = objects.property(String::class.java)
         .convention(System.getProperty("user.home") + "/qprotect.jar")
 
+    val annotationsVersionFallback: Property<String> = objects.property(String::class.java)
+        .convention("2.0.0-beta7")
+
     val relocations: MapProperty<String, String> =
         objects.mapProperty(String::class.java, String::class.java)
             .convention(emptyMap())

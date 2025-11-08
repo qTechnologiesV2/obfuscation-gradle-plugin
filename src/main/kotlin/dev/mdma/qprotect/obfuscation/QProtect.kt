@@ -16,23 +16,7 @@ class QProtect : Plugin<Project> {
         val extension = project.extensions.create("qprotect", QProtectExtension::class.java)
 
         project.afterEvaluate {
-            if (extension.qprotectJarPath.isPresent) {
-                val qprotectJar = project.file(extension.qprotectJarPath.get())
-                if (qprotectJar.exists()) {
-                    try {
-                        val version = readVersionFromJar(qprotectJar)
-                        if (version != null) {
-                            project.logger.info("Adding qProtect annotations dependency... version: $version")
-                            project.repositories.maven {
-                                url = project.uri("https://nexus.mdma.dev/repository/maven-releases/")
-                            }
-                            project.dependencies.add("compileOnly", "dev.mdma.qprotect:qprotect-annotations:$version")
-                        }
-                    } catch (e: Exception) {
-                        project.logger.warn("Could not read version from qProtect jar: ${e.message}")
-                    }
-                }
-            }
+            addAnnotationDependency(project, determineAnnotationsVersion(project, extension))
         }
 
         val tempDir = project.layout.buildDirectory.dir("qprotectTemp")
@@ -86,9 +70,43 @@ class QProtect : Plugin<Project> {
                     null
                 }
             }
-        } catch (_: Exception) {
-            null
+        } catch (e: Exception) {
+            throw e
         }
+    }
+
+    private fun determineAnnotationsVersion(project: Project, extension: QProtectExtension): String {
+        if (!extension.qprotectJarPath.isPresent) {
+            project.logger.warn("qProtect JAR path not configured, using fallback annotations version")
+            return extension.annotationsVersionFallback.get()
+        }
+
+        val qprotectJar = project.file(extension.qprotectJarPath.get())
+        if (!qprotectJar.exists()) {
+            project.logger.warn("qProtect JAR not found, using fallback annotations version")
+            return extension.annotationsVersionFallback.get()
+        }
+
+        return try {
+            readVersionFromJar(qprotectJar)?.takeIf { it.isNotBlank() } ?: run {
+                project.logger.error("No version found in qProtect JAR, using fallback")
+                extension.annotationsVersionFallback.get()
+            }
+        } catch (e: Exception) {
+            project.logger.error("Could not read version from qProtect JAR: ${e.message}, using fallback")
+            extension.annotationsVersionFallback.get()
+        }
+    }
+
+    private fun addAnnotationDependency(project: Project, version: String) {
+        project.logger.info("Adding qProtect annotations dependency... version: $version")
+        project.repositories.maven {
+            url = project.uri("https://nexus.mdma.dev/repository/maven-releases/")
+        }
+        project.dependencies.add(
+            "compileOnly",
+            "dev.mdma.qprotect:qprotect-annotations:$version"
+        )
     }
 
 }

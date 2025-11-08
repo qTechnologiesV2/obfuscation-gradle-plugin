@@ -156,15 +156,16 @@ tasks.named('build') {
 
 ## Configuration Options
 
-| Property          | Type                  | Required | Default                              | Description                                           |
-|-------------------|-----------------------|----------|--------------------------------------|-------------------------------------------------------|
-| `jarPath`         | `String`              | Yes      | -                                    | Path to the input JAR file to obfuscate               |
-| `outputJarPath`   | `String`              | Yes      | -                                    | Path where the obfuscated JAR will be saved           |
-| `qprotectJarPath` | `String`              | No       | `~/qprotect.jar`                     | Path to the qProtect executable JAR                   |
-| `configPath`      | `String`              | Yes      | -                                    | Path to the qProtect TOML configuration file          |
-| `relocations`     | `Map<String, String>` | No       | `emptyMap()`                         | Package relocation mappings to resolve conflicts      |
-| `jvmArgs`         | `List<String>`        | No       | `emptyList()`                        | JVM arguments for the obfuscation process             |
-| `configurations`  | `Set<String>`         | No       | `compileClasspath, runtimeClasspath` | Gradle configurations to process for dependencies     |
+| Property                     | Type                  | Required | Default                              | Description                                          |
+|------------------------------|-----------------------|----------|--------------------------------------|------------------------------------------------------|
+| `jarPath`                    | `String`              | Yes      | -                                    | Path to the input JAR file to obfuscate              |
+| `outputJarPath`              | `String`              | Yes      | -                                    | Path where the obfuscated JAR will be saved          |
+| `qprotectJarPath`            | `String`              | No       | `~/qprotect.jar`                     | Path to the qProtect executable JAR                  |
+| `configPath`                 | `String`              | Yes      | -                                    | Path to the qProtect TOML configuration file         |
+| `annotationsVersionFallback` | `String`              | No       | `2.0.0-beta7`                        | Fallback version for qProtect annotations dependency |
+| `relocations`                | `Map<String, String>` | No       | `emptyMap()`                         | Package relocation mappings to resolve conflicts     |
+| `jvmArgs`                    | `List<String>`        | No       | `emptyList()`                        | JVM arguments for the obfuscation process            |
+| `configurations`             | `Set<String>`         | No       | `compileClasspath, runtimeClasspath` | Gradle configurations to process for dependencies    |
 
 ### Build Lifecycle Integration
 
