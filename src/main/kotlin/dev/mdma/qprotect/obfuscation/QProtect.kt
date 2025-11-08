@@ -36,7 +36,7 @@ class QProtect : Plugin<Project> {
         }
 
         val tempDir = project.layout.buildDirectory.dir("qprotectTemp")
-        val copyLibrariesTask = project.tasks.register("copyLibraries", QProtectRelocateTask::class.java) {
+        val copyLibrariesTask = project.tasks.register("qprotectCopyLibraries", QProtectRelocateTask::class.java) {
             relocations.set(extension.relocations)
             configurations.set(extension.configurations)
             outputDirectory.set(tempDir)
