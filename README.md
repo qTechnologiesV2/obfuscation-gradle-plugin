@@ -41,7 +41,7 @@ Add the plugin to your `build.gradle` or `build.gradle.kts`:
 ```kotlin
 plugins {
     id("java")
-    id("dev.mdma.qprotect.obfuscation") version "2.0"
+    id("dev.mdma.qprotect.obfuscation") version "2.0.1"
 }
 ```
 
@@ -49,7 +49,7 @@ plugins {
 ```groovy
 plugins {
     id 'java'
-    id 'dev.mdma.qprotect.obfuscation' version '2.0'
+    id 'dev.mdma.qprotect.obfuscation' version '2.0.1'
 }
 ```
 
@@ -66,7 +66,7 @@ qprotect {
     // Required: Path for the obfuscated output JAR
     outputJarPath.set("build/libs/myapp-obfuscated.jar")
 
-    // Required: Path to the qProtect JAR file
+    // Required: Path to the qProtect JAR file (defaults to ~/qprotect.jar)
     qprotectJarPath.set("tools/qprotect.jar")
 
     // Required: Path to the qProtect configuration file
@@ -77,6 +77,15 @@ qprotect {
         "org.bson" to "com.myapp.shaded.bson",
         "com.google.common" to "com.myapp.shaded.guava"
     ))
+
+    // Optional: JVM arguments for the obfuscation process
+    jvmArgs.set(listOf(
+        "-Xmx2G",
+        "-Xms512M"
+    ))
+
+    // Optional: Gradle configurations to process for dependencies
+    configurations.set(setOf("compileClasspath", "runtimeClasspath"))
 }
 ```
 
@@ -92,6 +101,10 @@ qprotect {
             'org.bson': 'com.myapp.shaded.bson',
             'com.google.common': 'com.myapp.shaded.guava'
     ]
+
+    jvmArgs = ['-Xmx2G', '-Xms512M']
+
+    configurations = ['compileClasspath', 'runtimeClasspath']
 }
 ```
 
@@ -106,28 +119,56 @@ libraries = [
 
 ## Usage
 
+### Running Obfuscation
+
 Run the obfuscation task:
 
 ```bash
 ./gradlew obfuscate
 ```
 
-Or make it run automatically after building:
+### Auto-run After Build
 
+Make obfuscation run automatically after building:
+
+**Kotlin DSL:**
 ```kotlin
-tasks.named("build") { // or shadowJar, etc.
+tasks.named("build") {
     finalizedBy("obfuscate")
 }
 ```
 
+**Groovy DSL:**
+```groovy
+tasks.named('build') {
+    finalizedBy 'obfuscate'
+}
+```
+
+## Available Tasks
+
+| Task                     | Description                                      |
+|--------------------------|--------------------------------------------------|
+| `obfuscate`              | Main task: runs full obfuscation process         |
+| `qprotectCopyLibraries`  | Copies and relocates library dependencies        |
+| `qprotectCopyConfig`     | Copies and expands obfuscation configuration     |
+| `qprotectClean`          | Cleans qProtect temporary files                  |
+
 ## Configuration Options
 
-| Property          | Type                  | Required | Description                                      |
-|-------------------|-----------------------|----------|--------------------------------------------------|
-| `jarPath`         | `String`                | Yes      | Path to the input JAR file to obfuscate          |
-| `outputJarPath`   | `String`                | Yes      | Path where the obfuscated JAR will be saved      |
-| `qprotectJarPath` | `String`                | Yes      | Path to the qProtect executable JAR              |
-| `configPath`      | `String`              | Yes      | Path to the qProtect TOML configuration file     |
-| `relocations`     | `Map<String, String>` | No       | Package relocation mappings to resolve conflicts |
+| Property          | Type                  | Required | Default                              | Description                                           |
+|-------------------|-----------------------|----------|--------------------------------------|-------------------------------------------------------|
+| `jarPath`         | `String`              | Yes      | -                                    | Path to the input JAR file to obfuscate               |
+| `outputJarPath`   | `String`              | Yes      | -                                    | Path where the obfuscated JAR will be saved           |
+| `qprotectJarPath` | `String`              | No       | `~/qprotect.jar`                     | Path to the qProtect executable JAR                   |
+| `configPath`      | `String`              | Yes      | -                                    | Path to the qProtect TOML configuration file          |
+| `relocations`     | `Map<String, String>` | No       | `emptyMap()`                         | Package relocation mappings to resolve conflicts      |
+| `jvmArgs`         | `List<String>`        | No       | `emptyList()`                        | JVM arguments for the obfuscation process             |
+| `configurations`  | `Set<String>`         | No       | `compileClasspath, runtimeClasspath` | Gradle configurations to process for dependencies     |
 
-**Note:** The `${dependenciesPath}` variable is automatically provided by the plugin and points to your project's dependencies.
+### Build Lifecycle Integration
+
+The plugin integrates with Gradle's build lifecycle:
+- `obfuscate` automatically depends on `jar` task (if configured)
+- `clean` automatically runs `qprotectClean`
+- Incremental builds and caching supported

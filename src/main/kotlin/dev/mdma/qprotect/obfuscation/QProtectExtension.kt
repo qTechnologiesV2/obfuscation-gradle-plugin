@@ -1,8 +1,10 @@
 package dev.mdma.qprotect.obfuscation
 
 import org.gradle.api.model.ObjectFactory
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.SetProperty
 import javax.inject.Inject
 
 abstract class QProtectExtension @Inject constructor(objects: ObjectFactory) {
@@ -19,5 +21,11 @@ abstract class QProtectExtension @Inject constructor(objects: ObjectFactory) {
     val relocations: MapProperty<String, String> =
         objects.mapProperty(String::class.java, String::class.java)
             .convention(emptyMap())
+
+    val jvmArgs: ListProperty<String> = objects.listProperty(String::class.java)
+        .convention(emptyList())
+
+    val configurations: SetProperty<String> = objects.setProperty(String::class.java)
+        .convention(setOf("compileClasspath", "runtimeClasspath"))
 
 }

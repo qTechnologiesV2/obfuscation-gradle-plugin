@@ -1,112 +1,93 @@
 package dev.mdma.qprotect.obfuscation
 
-import me.lucko.jarrelocator.JarRelocator
-import me.lucko.jarrelocator.Relocation
-import org.gradle.api.GradleException
+import dev.mdma.qprotect.obfuscation.tasks.QProtectCopyConfigTask
+import dev.mdma.qprotect.obfuscation.tasks.QProtectObfuscateTask
+import dev.mdma.qprotect.obfuscation.tasks.QProtectRelocateTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.file.RegularFile
-import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.Copy
-import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.Delete
+import java.io.File
+import java.util.Properties
+import java.util.jar.JarFile
 
 class QProtect : Plugin<Project> {
 
     override fun apply(project: Project) {
         val extension = project.extensions.create("qprotect", QProtectExtension::class.java)
-        val tempDir = project.layout.buildDirectory.dir("qprotectTemp")
 
-        val copyArtifactsTask = project.tasks.register("copyArtifacts") {
-            doFirst {
-                project.delete(tempDir)
-            }
-
-            doLast {
-                val outputDir = tempDir.get().asFile
-                outputDir.mkdirs()
-
-                val relocations = mutableListOf<Relocation>()
-
-                relocations.addAll(
-                    extension.relocations.get().map { (key, value) ->
-                        Relocation(key, value)
-                    }
-                )
-
-                project.configurations.getByName("compileClasspath")
-                    .resolvedConfiguration
-                    .resolvedArtifacts
-                    .map { it.file }
-                    .forEach { file ->
-                        if (file.isFile && file.name.endsWith(".jar")) {
-                            val relocator = JarRelocator(
-                                file,
-                                outputDir.resolve(file.name),
-                                relocations
-                            )
-                            relocator.run()
-                        } else {
-                            project.logger.lifecycle("Skipping non-JAR file: ${file.path}")
-                        }
-                    }
-            }
-        }
-
-        val copyConfigTask = project.tasks.register("copyObfuscationConfig", Copy::class.java) {
-            from(extension.configPath.map { project.file(it) })
-            into(tempDir)
-            expand(mapOf("dependenciesPath" to tempDir.get().asFile.path.replace("\\", "/") + "/"))
-        }
-
-        val configFileProvider: Provider<RegularFile> = extension.configPath.flatMap { configPath ->
-            val fileName = project.file(configPath).name
-            tempDir.map { it.file(fileName) }
-        }
-
-        val deleteArtifactsTask = project.tasks.register("deleteArtifacts") {
-            doLast {
-                project.delete(tempDir)
-            }
-        }
-
-        project.tasks.register("obfuscate", Exec::class.java) {
-            group = "build"
-            description = "Runs qProtect obfuscation on the built jar."
-
-            dependsOn(copyArtifactsTask, copyConfigTask)
-
-            inputs.file(extension.jarPath.map { project.file(it) })
-            inputs.file(configFileProvider)
-            outputs.file(extension.outputJarPath.map { project.file(it) })
-
-            doFirst {
+        project.afterEvaluate {
+            if (extension.qprotectJarPath.isPresent) {
                 val qprotectJar = project.file(extension.qprotectJarPath.get())
-                val inputJar = project.file(extension.jarPath.get())
-                val outputJar = project.file(extension.outputJarPath.get())
-                val configFile = configFileProvider.get().asFile
-
-                if (!qprotectJar.exists()) {
-                    throw GradleException("QProtect jar not found at: ${qprotectJar.absolutePath}")
+                if (qprotectJar.exists()) {
+                    try {
+                        val version = readVersionFromJar(qprotectJar)
+                        if (version != null) {
+                            project.logger.info("Adding qProtect annotations dependency... version: $version")
+                            project.repositories.maven {
+                                url = project.uri("https://nexus.mdma.dev/repository/maven-releases/")
+                            }
+                            project.dependencies.add("compileOnly", "dev.mdma.qprotect:qprotect-annotations:$version")
+                        }
+                    } catch (e: Exception) {
+                        project.logger.warn("Could not read version from qProtect jar: ${e.message}")
+                    }
                 }
-                if (!inputJar.exists()) {
-                    throw GradleException("Input jar not found: ${inputJar.absolutePath}")
-                }
-                if (!configFile.exists()) {
-                    throw GradleException("Expanded config file not found at: ${configFile.absolutePath}")
-                }
-
-                val argsList = mutableListOf(
-                    "java",
-                    "-jar", qprotectJar.absolutePath,
-                    "-c", configFile.absolutePath,
-                    "-i", inputJar.absolutePath,
-                    "-o", outputJar.absolutePath
-                )
-
-                commandLine(argsList)
             }
+        }
 
-            finalizedBy(deleteArtifactsTask)
+        val tempDir = project.layout.buildDirectory.dir("qprotectTemp")
+        val copyLibrariesTask = project.tasks.register("copyLibraries", QProtectRelocateTask::class.java) {
+            relocations.set(extension.relocations)
+            configurations.set(extension.configurations)
+            outputDirectory.set(tempDir)
+        }
+
+        val copyConfigTask = project.tasks.register("qprotectCopyConfig", QProtectCopyConfigTask::class.java) {
+            configFile.set(project.layout.file(extension.configPath.map { project.file(it) }))
+            dependenciesPath.set(tempDir.map { it.asFile.absolutePath.replace("\\", "/") + "/" })
+            outputConfigFile.set(extension.configPath.flatMap { configPath ->
+                val fileName = project.file(configPath).name
+                tempDir.map { it.file(fileName) }
+            })
+        }
+
+        project.tasks.register("obfuscate", QProtectObfuscateTask::class.java) {
+            dependsOn(copyLibrariesTask, copyConfigTask)
+
+            qprotectJar.set(project.layout.file(extension.qprotectJarPath.map { project.file(it) }))
+            inputJar.set(project.layout.file(extension.jarPath.map { project.file(it) }))
+            configFile.set(copyConfigTask.flatMap { it.outputConfigFile })
+            outputJar.set(project.layout.file(extension.outputJarPath.map { project.file(it) }))
+            jvmArgs.set(extension.jvmArgs)
+        }
+
+        val cleanqProtectTask = project.tasks.register("qprotectClean", Delete::class.java) {
+            group = "qprotect"
+            description = "Cleans qProtect temporary files"
+            delete(tempDir)
+        }
+
+        project.tasks.named("clean") {
+            dependsOn(cleanqProtectTask)
+        }
+    }
+
+    private fun readVersionFromJar(jarFile: File): String? {
+        return try {
+            JarFile(jarFile).use { jar ->
+                val entry = jar.getEntry("qprotect.properties")
+                if (entry != null) {
+                    jar.getInputStream(entry).use { inputStream ->
+                        val properties = Properties()
+                        properties.load(inputStream)
+                        properties.getProperty("version")
+                    }
+                } else {
+                    null
+                }
+            }
+        } catch (_: Exception) {
+            null
         }
     }
 
