@@ -39,9 +39,16 @@ abstract class QProtectRelocateTask : DefaultTask() {
 
         val processedFiles = mutableSetOf<File>()
         val configNames = configurations.get()
+        logger.lifecycle("Searching configurations: ${configNames.toTypedArray().contentToString()}")
 
         configNames.forEach { configName ->
-            project.configurations.findByName(configName)?.let { config ->
+            val configuration = project.configurations.findByName(configName)
+            if (configuration == null) {
+                logger.warn("Configuration $configName not found in project ${project.name}. Found configurations: ${project.configurations.names}")
+                return@forEach
+            }
+
+            configuration.let { config ->
                 try {
                     config.resolvedConfiguration
                         .resolvedArtifacts
