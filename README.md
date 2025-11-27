@@ -41,7 +41,7 @@ Add the plugin to your `build.gradle` or `build.gradle.kts`:
 ```kotlin
 plugins {
     id("java")
-    id("dev.mdma.qprotect.obfuscation") version "2.0.1"
+    id("dev.mdma.qprotect.obfuscation") version "2.0.2"
 }
 ```
 
@@ -49,7 +49,7 @@ plugins {
 ```groovy
 plugins {
     id 'java'
-    id 'dev.mdma.qprotect.obfuscation' version '2.0.1'
+    id 'dev.mdma.qprotect.obfuscation' version '2.0.2'
 }
 ```
 
@@ -162,6 +162,7 @@ tasks.named('build') {
 | `outputJarPath`              | `String`              | Yes      | -                                    | Path where the obfuscated JAR will be saved          |
 | `qprotectJarPath`            | `String`              | No       | `~/qprotect.jar`                     | Path to the qProtect executable JAR                  |
 | `configPath`                 | `String`              | Yes      | -                                    | Path to the qProtect TOML configuration file         |
+| `forcedAnnotationsVersion`   | `String`              | No       | ``                                   | Forced version for qProtect annotations dependency   |
 | `annotationsVersionFallback` | `String`              | No       | `2.0.0-beta7`                        | Fallback version for qProtect annotations dependency |
 | `relocations`                | `Map<String, String>` | No       | `emptyMap()`                         | Package relocation mappings to resolve conflicts     |
 | `jvmArgs`                    | `List<String>`        | No       | `emptyList()`                        | JVM arguments for the obfuscation process            |

@@ -76,6 +76,12 @@ class QProtect : Plugin<Project> {
     }
 
     private fun determineAnnotationsVersion(project: Project, extension: QProtectExtension): String {
+        val forcedVersion = extension.forcedAnnotationsVersion.get()
+        if (forcedVersion.isNotBlank()) {
+            project.logger.info("Using forced qProtect annotations version: $forcedVersion")
+            return forcedVersion
+        }
+
         if (!extension.qprotectJarPath.isPresent) {
             project.logger.warn("qProtect JAR path not configured, using fallback annotations version")
             return extension.annotationsVersionFallback.get()
