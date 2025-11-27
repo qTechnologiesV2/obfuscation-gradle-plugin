@@ -37,11 +37,6 @@ abstract class QProtectRelocateTask : DefaultTask() {
             Relocation(key, value)
         }
 
-        if (relocationList.isEmpty()) {
-            logger.warn("No relocations configured, skipping artifact relocation")
-            return
-        }
-
         val processedFiles = mutableSetOf<File>()
         val configNames = configurations.get()
 
@@ -54,16 +49,22 @@ abstract class QProtectRelocateTask : DefaultTask() {
                         .forEach { file ->
                             if (file !in processedFiles && file.isFile && file.name.endsWith(".jar")) {
                                 processedFiles.add(file)
-                                try {
-                                    logger.info("Relocating: ${file.name}")
-                                    val relocator = JarRelocator(
-                                        file,
-                                        outputDir.resolve(file.name),
-                                        relocationList
-                                    )
-                                    relocator.run()
-                                } catch (e: Exception) {
-                                    throw GradleException("Failed to relocate ${file.name}: ${e.message}", e)
+                                if (relocationList.isEmpty()) {
+                                    val targetFile = File(outputDir, file.name)
+                                    file.copyTo(targetFile, overwrite = true)
+                                    logger.lifecycle("Copied ${file.name} to ${targetFile.absolutePath} without relocations")
+                                } else {
+                                    try {
+                                        logger.info("Relocating: ${file.name}")
+                                        val relocator = JarRelocator(
+                                            file,
+                                            outputDir.resolve(file.name),
+                                            relocationList
+                                        )
+                                        relocator.run()
+                                    } catch (e: Exception) {
+                                        throw GradleException("Failed to relocate ${file.name}: ${e.message}", e)
+                                    }
                                 }
                             }
                         }
